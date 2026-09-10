@@ -1,0 +1,9 @@
+{
+  "name": "Rizu Sensei — Japanese Learning Hub",
+  "short_name": "Rizu Sensei",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#faf6ee",
+  "theme_color": "#ee3a32",
+  "description": "Belajar bahasa Jepang N5–N3 dengan lesson, flashcard, quiz, shadowing, dan progress."
+}
