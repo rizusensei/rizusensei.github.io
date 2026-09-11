@@ -1,9 +1,12 @@
-
-const D=window.RIZU_DATA,R=window.RIZU;
-["N5","N4","N3"].forEach(level=>{
-  const p=R.levelProgress(level),el=document.querySelector(`[data-summary="${level}"]`);
-  if(el){el.querySelector("strong").textContent=`${p.done}/${p.total}`;el.querySelector(".progressbar span").style.width=p.pct+"%";el.querySelector("[data-pct]").textContent=p.pct+"% selesai";}
-});
-const next=R.nextIncomplete(R.getState().activeLevel);
-const continueBtn=document.querySelector("#continueBtn");
-if(continueBtn){continueBtn.href=`learn.html?id=${next.id}`;continueBtn.querySelector("span").textContent=`Lanjut ${next.level}: ${next.title}`;}
+const R=window.RIZU,C=window.RIZU_CONTENT,s=R.get(),st=R.streak(),ss=R.srsStats();
+const done=C.curriculum.filter(x=>s.completed.includes(x.id)).length,pct=Math.round(done/C.curriculum.length*100);
+document.querySelector("#homeLessons").textContent=`${done}/${C.curriculum.length}`;
+document.querySelector("#homeLessonPct").textContent=`${pct}% curriculum`;
+document.querySelector("#homeLessonBar").style.width=pct+"%";document.querySelector("#overallMini").style.width=pct+"%";
+document.querySelector("#homeDue").textContent=ss.due;document.querySelector("#homeSrsBar").style.width=Math.min(100,ss.due*4)+"%";
+document.querySelector("#homeDays").textContent=st.days;document.querySelector("#homeBest").textContent=`best streak ${st.best} hari`;document.querySelector("#homeStreakBar").style.width=Math.min(100,st.current*10)+"%";
+document.querySelector("#streakTitle").textContent=st.current?`${st.current} hari streak. Pertahankan.`:"Mulai streak belajar.";
+const level=R.level(),list=C.curriculum.filter(x=>x.level===level),next=list.find(x=>!R.completed(x.id))||list[0];
+document.querySelector("#continueBtn").href=`learn.html?id=${next.id}`;document.querySelector("#continueBtn").textContent=`Lanjut ${next.level} · ${next.title} →`;
+document.querySelector("#todayGoal").textContent=ss.due?`${ss.due} kartu SRS menunggu`:`${next.level}: ${next.title}`;
+const sel=document.querySelector('#activeLevel');sel.value=level;sel.onchange=()=>{R.setLevel(sel.value);location.href='index.html?level='+sel.value};document.querySelector('#levelRoadmap').innerHTML=C.levels.map(l=>{const p=R.lessonProgress(l);return '<a class="'+(l===level?'active':'')+'" href="learn.html?level='+l+'"><b>'+l+'</b><small>'+p.done+'/'+p.total+' lesson</small><div class="progressbar"><span style="width:'+p.pct+'%"></span></div></a>'}).join('');

@@ -1,0 +1,14 @@
+{
+  "release": "5.0.0",
+  "tutorials": 35,
+  "keigo": 22,
+  "kanji": 13108,
+  "wordEntries": 165531,
+  "proverbs": 70,
+  "onomatopoeia": 56,
+  "loanwords": 60,
+  "strokeTemplates": 6704,
+  "kanjiDataRevision": "c54ae56648eb741f837854d46b74d336ea07c246",
+  "kotowazaRevision": "c6435b3e13937fbfb6d464410f68dccf76384264",
+  "kanjiVGRevision": "422b5538595676da918c288a4230cb5e22a1ee7e"
+}

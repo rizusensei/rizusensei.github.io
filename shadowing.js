@@ -1,26 +1,22 @@
-
-const D=window.RIZU_DATA;
-let activeLevel="N5",active=null,mediaRecorder=null,chunks=[],stream=null;
-const list=document.querySelector("#shadowList");
-function voices(){return speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.toLowerCase().startsWith("ja"))}
-function renderList(){
-  const items=D.shadowing.filter(x=>x.level===activeLevel); active=items[0];
-  list.innerHTML=items.map((x,i)=>`<button class="shadow-item ${i===0?"active":""}" data-id="${x.id}"><b>${x.jp}</b><span>${x.reading}</span></button>`).join("");
-  list.querySelectorAll("button").forEach(btn=>btn.onclick=()=>{list.querySelectorAll("button").forEach(x=>x.classList.remove("active"));btn.classList.add("active");active=D.shadowing.find(x=>x.id===btn.dataset.id);renderActive()});
-  renderActive();
+const C=window.RIZU_CONTENT,R=window.RIZU;
+let level=R.level(),active,rec,chunks=[],stream,recordURL=null,recordingPending=false;
+const rb=document.querySelector('#recordBtn'),status=document.querySelector('#recordStatus');
+function selectActive(x){if(rec?.state==='recording'){status.textContent='Hentikan rekaman sebelum mengganti naskah.';return}if('speechSynthesis'in window)speechSynthesis.cancel();active=x;show()}
+function list(){const a=C.shadowing.filter(x=>x.level===level);const id=new URLSearchParams(location.search).get('id');active=a.find(x=>x.id===id)||a[0];document.querySelector('#shadowList').innerHTML=a.map((x,i)=>`<button class="shadow-item" data-id="${x.id}"><b>${x.title?R.escape(x.title):R.escape(x.ja)}</b><span>${x.question?'Dialog / monolog · pertanyaan menyimak':R.escape(x.meaning_id)}</span></button>`).join('');document.querySelectorAll('.shadow-item').forEach(b=>b.onclick=()=>selectActive(C.shadowing.find(x=>x.id===b.dataset.id)));show()}
+function show(){
+ document.querySelectorAll('.shadow-item').forEach(b=>b.classList.toggle('active',b.dataset.id===active.id));
+ document.querySelector('#shadowLevel').textContent=`JLPT ${active.level} · ${active.title||'SHADOWING'}`;
+ document.querySelector('#shadowJp').textContent=active.ja;document.querySelector('#shadowMeaning').textContent=active.meaning_id;
+ document.querySelector('#shadowJp').hidden=true;document.querySelector('#shadowMeaning').hidden=true;
+ const toggle=document.querySelector('#toggleTranscript');toggle.textContent='Tampilkan transkrip & arti';toggle.setAttribute('aria-expanded','false');
+ toggle.onclick=()=>{const hide=!document.querySelector('#shadowJp').hidden;document.querySelector('#shadowJp').hidden=hide;document.querySelector('#shadowMeaning').hidden=hide;toggle.textContent=hide?'Tampilkan transkrip & arti':'Sembunyikan transkrip & arti';toggle.setAttribute('aria-expanded',String(!hide))};
+ const check=document.querySelector('#listenCheck');check.innerHTML=active.question?R.questionHTML(active.question,0):'<p>Dengarkan, ucapkan ulang, lalu cocokkan dengan transkrip.</p>';if(active.question)R.bindQuestions(check,[active.question]);
+ const done=document.querySelector('#shadowDone'),book=document.querySelector('#shadowBookmark');done.textContent=R.get().listeningDone.includes(active.id)?'✓ Latihan selesai':'Tandai latihan selesai';book.textContent=R.isBookmarked('shadowing',active.id)?'★ Bookmarked':'☆ Bookmark';
+ done.onclick=()=>{R.listeningDone(active.id);done.textContent=R.get().listeningDone.includes(active.id)?'✓ Latihan selesai':'Tandai latihan selesai'};book.onclick=()=>{const on=R.toggleBookmark('shadowing',active.id,active.title||active.ja,{level});book.textContent=on?'★ Bookmarked':'☆ Bookmark'};
+ const audio=document.querySelector('#audioPlayback');audio.pause();audio.removeAttribute('src');audio.classList.add('hide');if(recordURL){URL.revokeObjectURL(recordURL);recordURL=null}status.textContent='Dengarkan tanpa transkrip, jawab pertanyaan, lalu ulangi per frasa. Audio menggunakan TTS perangkat.';
 }
-function renderActive(){document.querySelector("#shadowLevel").textContent=`JLPT ${active.level} · SHADOWING`;document.querySelector("#shadowJp").textContent=active.jp;document.querySelector("#shadowRomaji").textContent=active.reading}
-document.querySelector("#playTts").onclick=()=>{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(active.jp);u.lang="ja-JP";u.rate=0.85;const vs=voices();if(vs[0])u.voice=vs[0];speechSynthesis.speak(u)};
-document.querySelector("#playSlow").onclick=()=>{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(active.jp);u.lang="ja-JP";u.rate=0.62;const vs=voices();if(vs[0])u.voice=vs[0];speechSynthesis.speak(u)};
-const recBtn=document.querySelector("#recordBtn"),status=document.querySelector("#recordStatus"),audio=document.querySelector("#audioPlayback");
-recBtn.onclick=async()=>{
-  if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();return}
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];mediaRecorder=new MediaRecorder(stream);
-    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
-    mediaRecorder.onstop=()=>{const blob=new Blob(chunks,{type:mediaRecorder.mimeType});audio.src=URL.createObjectURL(blob);audio.classList.remove("hide");stream.getTracks().forEach(t=>t.stop());recBtn.textContent="● Rekam Ulang";status.textContent="Rekaman siap. Dengarkan dan bandingkan dengan contoh.";status.classList.remove("rec")};
-    mediaRecorder.start();recBtn.textContent="■ Stop Rekaman";status.textContent="Sedang merekam… baca kalimat di atas.";status.classList.add("rec");
-  }catch(e){status.textContent="Mikrofon tidak tersedia/izin ditolak. TTS tetap bisa digunakan."}
-};
-document.querySelectorAll("[data-shadow-level]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-shadow-level]").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeLevel=b.dataset.shadowLevel;renderList()});
-renderList();
+function speak(rate){if(R.speak(active.ja,rate,m=>status.textContent=m))R.activity()}
+document.querySelector('#playTts').onclick=()=>speak(level==='N1'?1:level==='N2'?.95:.86);document.querySelector('#playSlow').onclick=()=>speak(.65);
+rb.onclick=async()=>{if(recordingPending)return;if(rec?.state==='recording'){rec.stop();rb.disabled=true;return}if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){status.textContent='Perekaman membutuhkan browser yang mendukung mikrofon melalui HTTPS atau localhost.';return}recordingPending=true;rb.disabled=true;try{stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];rec=new MediaRecorder(stream);rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onstop=()=>{if(recordURL)URL.revokeObjectURL(recordURL);recordURL=URL.createObjectURL(new Blob(chunks,{type:rec.mimeType}));const a=document.querySelector('#audioPlayback');a.src=recordURL;a.classList.remove('hide');stream.getTracks().forEach(t=>t.stop());status.textContent='Rekaman siap diputar. Bandingkan ritme dan jeda dengan contoh.';rb.textContent='● Rekam Ulang';rb.disabled=false;R.activity()};rec.onerror=()=>{stream?.getTracks().forEach(t=>t.stop());rb.disabled=false;status.textContent='Perekaman gagal. Coba lagi.'};rec.start();status.textContent='Sedang merekam…';rb.textContent='■ Stop'}catch{stream?.getTracks().forEach(t=>t.stop());status.textContent='Mikrofon belum diizinkan atau tidak tersedia. Periksa izin browser.'}finally{recordingPending=false;rb.disabled=false}};
+document.querySelectorAll('[data-shadow-level]').forEach(b=>{b.classList.toggle('active',b.dataset.shadowLevel===level);b.onclick=()=>{if(rec?.state==='recording'||recordingPending){status.textContent='Hentikan rekaman sebelum mengganti level.';return}level=b.dataset.shadowLevel;R.setLevel(level);document.querySelectorAll('[data-shadow-level]').forEach(x=>x.classList.toggle('active',x===b));list()}});
+window.addEventListener('pagehide',()=>{if(rec?.state==='recording')rec.stop();stream?.getTracks().forEach(t=>t.stop());if(recordURL)URL.revokeObjectURL(recordURL)});list();

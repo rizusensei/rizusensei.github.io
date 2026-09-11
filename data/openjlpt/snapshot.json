@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/evanclan/OpenJLPT",
+  "revision": "c42fd9fa3777bfc1775446f7c418d549dfd6e4cf",
+  "retrieved": "2026-09-11",
+  "counts": {
+    "vocab": {
+      "N5": 662,
+      "N4": 632,
+      "N3": 1784,
+      "N2": 1793,
+      "N1": 3463
+    },
+    "kanji": {
+      "N5": 79,
+      "N4": 166,
+      "N3": 367,
+      "N2": 367,
+      "N1": 1232
+    },
+    "grammar": {
+      "N5": 20,
+      "N4": 20,
+      "N3": 20,
+      "N2": 20,
+      "N1": 20
+    }
+  }
+}
